@@ -7,8 +7,8 @@ server = '192.168.0.11'
 function createConfigService()
   return {
     ipAddr = "192.168.0.11",
-    pingUrl = "http://192.168.0.11/ping",
-    wsUrl = "ws://192.168.0.11/ws"
+    pingUrl = "http://192.168.0.11:8080/ping",
+    wsUrl = "ws://192.168.0.11:8080/ws"
   }
 end
 
@@ -95,7 +95,7 @@ wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T)
 
 --wifi.setmode(wifi.STATION)
 --wifi.sta.getap(listap)
---wifi.sta.config{ssid="germana", pwd="00000000"}
+--wifi.sta.config{ssid="?", pwd="?"}
 --wifi.sta.connect()
 
 function debounce (func)
