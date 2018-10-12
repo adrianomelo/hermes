@@ -8,7 +8,7 @@ function createConfigService()
   return {
     ipAddr = "192.168.0.11",
     pingUrl = "http://192.168.0.11:8080/ping",
-    wsUrl = "ws://192.168.0.11:8080/ws"
+    wsUrl = "ws://192.168.0.11:8080/websocket"
   }
 end
 
@@ -28,15 +28,19 @@ function startWS()
  ws = websocket.createClient()
  ws:on("connection", function(ws)
    print('got ws connection')
-   ws:send("hello")
+   --ws:send("hello")
  end)
  ws:on("receive", function(_, msg, opcode)
-   print('got message:', msg, opcode) -- opcode is 1 for text message, 2 for binary
+   --print('got message:', msg, opcode) -- opcode is 1 for text message, 2 for binary
+   json = sjson.decode(msg)
+   if (json.type == "ECHO") then
+     ws:send(sjson.encode({type = "ECHO_BACK", time = json.time}))
+   end
  end)
  ws:on("close", function(_, status)
    print('connection closed', status)
-   ws = nil -- required to Lua gc the websocket client
-   startWS()
+   --ws = nil -- required to Lua gc the websocket client
+   --startWS()
  end)
  ws:connect(configService.wsUrl)
 end
@@ -93,10 +97,10 @@ wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T)
  end)
 
 
---wifi.setmode(wifi.STATION)
---wifi.sta.getap(listap)
---wifi.sta.config{ssid="?", pwd="?"}
---wifi.sta.connect()
+wifi.setmode(wifi.STATION)
+wifi.sta.getap(listap)
+wifi.sta.config{ssid="?", pwd="?"}
+wifi.sta.connect()
 
 function debounce (func)
     local last = 0

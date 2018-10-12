@@ -13,7 +13,7 @@ start(_StartType, _StartArgs) ->
   ]),
   {ok, _} = cowboy:start_clear(
       hermes_http_listener,
-      [{port, 8888}],
+      [{port, 8080}],
       #{env => #{dispatch => Dispatch}}
   ),
   hermes_sup:start_link().
