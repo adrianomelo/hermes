@@ -4,6 +4,16 @@ print "...now!"
 
 server = '192.168.0.11'
 
+function rainbow()
+  ws2812.init()
+  ledBuffer = ws2812.newBuffer(12, 3)
+  ws2812_effects.init(ledBuffer)
+  ws2812_effects.set_brightness(255)
+  ws2812_effects.set_speed(240)
+  ws2812_effects.set_mode("rainbow_cycle")
+  ws2812_effects.start()
+end
+
 function createConfigService()
   return {
     ipAddr = "192.168.0.11",
