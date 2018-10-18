@@ -1,0 +1,44 @@
+
+html {
+  height: 100%;
+}
+body {
+  height: 100%;
+  margin: 0;
+}
+
+#press { display: none; }
+#container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: green;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+.text {
+  color: white;
+  font-family: helvetica, Roboto;
+  font-size: 7vh;
+  text-align: center;
+}
+#sign {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+#stats {
+  display: flex;
+  flex-direction: row;
+  flex-basis: 15vh;
+  font-size: 3vh;
+}
+#stats > div {
+  margin-right: 30px;
+}

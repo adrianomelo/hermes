@@ -3,11 +3,24 @@
 <head>
   <title>Button</title>
   <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0, width=device-width" />
   <link href="button.css" rel="stylesheet">
   <script type="text/javascript" src="button.js"></script>
 </head>
 <body>
-  <input type="button" name="press" value="press" onclick="press()"></p>
-  <div id="log"></div>
+  <div id="container">
+    <div id="sign" class="text">
+      <input
+        id="press"
+        type="button"
+        value="Click!" />
+      Click!
+    </div>
+    <div id="stats" class="text">
+      <div>Average | 200ms</div>
+      <div>Best | 200ms</div>
+      <div>Attempts | 3</div>
+    </div>
+  </div>
 </body>
 </html>
