@@ -5,10 +5,12 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
+  websocket:start(),
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/ping", ping_handler, []},
-      {"/websocket", ws_handler, []}
+      {"/websocket", ws_handler, []},
+      {"/devices", devices_handler, []}
     ]}
   ]),
   {ok, _} = cowboy:start_clear(
