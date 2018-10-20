@@ -47,7 +47,11 @@ init([]) ->
   {ok, empty()}.
 
 handle_call({list}, _, State) ->
-  {reply, State, State};
+  List = lists:map(
+    fun({Pid, Extra}) ->
+      maps:put(id, list_to_binary(pid_to_list(Pid)), Extra)
+    end, State),
+  {reply, List, State};
 
 handle_call(_, _, State) ->
   {reply, error, State}.

@@ -10,7 +10,8 @@ start(_StartType, _StartArgs) ->
     {'_', [
       {"/ping", ping_handler, []},
       {"/websocket", ws_handler, []},
-      {"/devices", devices_handler, []}
+      {"/devices", devices_handler, []},
+      {"/devices/:id/ack", devices_handler, [ack]}
     ]}
   ]),
   {ok, _} = cowboy:start_clear(

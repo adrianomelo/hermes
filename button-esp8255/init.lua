@@ -95,6 +95,7 @@ end
 
 ECHO = string.byte('E')
 BLINK = string.byte('B')
+REACT = string.byte('R')
 
 function startWS()
  ws = websocket.createClient()
@@ -104,8 +105,7 @@ function startWS()
     
     if cmd == ECHO then
       ws:send("e"..payload)
-      _start()
-    elseif cmd == BLINK then
+    elseif cmd == REACT then
       _start()
     end
  end)

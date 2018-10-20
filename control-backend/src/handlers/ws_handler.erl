@@ -9,12 +9,14 @@
 
 
 init(Req, _State) ->
-  io:fwrite("init~p~n", [Req]),
-  Host = maps:get(host, Req),
-  {cowboy_websocket, Req, empty(Host)}.
+  io:fwrite("Connected ~p~n", [Req]),
+  #{
+    headers := #{<<"user-agent">> := UserAgent}
+  } = Req,
+  {cowboy_websocket, Req, empty(UserAgent)}.
 
 websocket_init(State) ->
-  io:fwrite("websocket_init~n"),
+  io:fwrite("Add client ~p~n", [self()]),
   websocket:add(self(), State),
   erlang:start_timer(1000, self(), ping),
   {ok, State}.
@@ -26,9 +28,13 @@ websocket_handle(Frame = {text, Text}, State) ->
 websocket_handle(_, State) ->
   {ok, State}.
 
-websocket_info({timeout, _Ref, _Msg}, State) ->
+websocket_info({timeout, _, ping}, State) ->
 	erlang:start_timer(1000, self(), ping),
 	{reply, {text, simple_echo_msg()}, State};
+websocket_info({timeout, _, react}, State) ->
+	{reply, {text, <<"R">>}, State};
+websocket_info({react}, State) ->
+	{reply, {text, <<"R">>}, State};
 websocket_info({json, Json}, State) ->
   {reply, {text, jiffy:encode(Json)}, State};
 websocket_info(Msg, State) ->
@@ -44,11 +50,18 @@ terminate(_Reason, _PartialReq, _State) ->
 %  private  %
 %%%%%%%%%%%%%
 
-empty(Host) ->
+empty(UserAgent) ->
   #{
     latency => 0,
-    host => Host
+    userAgent => UserAgent
   }.
+
+dispatch_sequence(Seq) ->
+  lists:foreach(
+    fun(N) ->
+        erlang:start_timer(N, self(), react)
+    end,
+    Seq).
 
 simple_echo_msg() ->
   Now = integer_to_list(get_now()),
