@@ -1,17 +1,76 @@
 print "Starting..."
-tmr.delay(1000000)
+--tmr.delay(1000000)
 print "...now!"
 
 server = '192.168.0.11'
 
-function rainbow()
-  ws2812.init()
-  ledBuffer = ws2812.newBuffer(12, 3)
-  ws2812_effects.init(ledBuffer)
-  ws2812_effects.set_brightness(255)
+BRIGHTNESS = 1
+
+rtctime.set(0)
+
+function now()
+  sec, usec, rate = rtctime.get()
+  return sec * 1000000 + usec
+end
+
+function diffToNow(time)
+  timeNow = now()
+  return timeNow - time
+end
+
+ws2812.init()
+ledBuffer = ws2812.newBuffer(12, 3)
+ws2812_effects.init(ledBuffer)
+
+function rainbowCycle()
+  ws2812_effects.stop()
+  ws2812_effects.set_brightness(BRIGHTNESS)
   ws2812_effects.set_speed(240)
   ws2812_effects.set_mode("rainbow_cycle")
   ws2812_effects.start()
+end
+
+function rainbow()
+  ws2812_effects.stop()
+  ws2812_effects.set_brightness(BRIGHTNESS)
+  ws2812_effects.set_speed(255)
+  ws2812_effects.set_mode("rainbow")
+  ws2812_effects.start()
+end
+
+function blink()
+  ws2812_effects.stop()
+  ws2812_effects.set_brightness(BRIGHTNESS)
+  ws2812_effects.set_speed(240)
+  ws2812_effects.set_mode("blink")
+  ws2812_effects.set_color(255,0,0)
+  ws2812_effects.start()
+end
+
+function turnOff()
+  ws2812_effects.set_color(0,0,0)
+  ws2812_effects.set_brightness(0)
+end
+
+function turnOn()
+  blink()
+end
+
+on = false
+onTime = 0
+function _stop()
+  if (on == true) then
+    turnOff()
+    on = false
+  end
+end
+
+function _start()
+  if (on == false) then
+    turnOn()
+    onTime = now()
+    on = true
+  end
 end
 
 function createConfigService()
@@ -34,81 +93,30 @@ function testHttp(configService)
   end)
 end
 
+ECHO = string.byte('E')
+BLINK = string.byte('B')
+
 function startWS()
  ws = websocket.createClient()
- ws:on("connection", function(ws)
-   print('got ws connection')
-   --ws:send("hello")
- end)
- ws:on("receive", function(_, msg, opcode)
-   --print('got message:', msg, opcode) -- opcode is 1 for text message, 2 for binary
-   json = sjson.decode(msg)
-   if (json.type == "ECHO") then
-     ws:send(sjson.encode({type = "ECHO_BACK", time = json.time}))
-   end
- end)
- ws:on("close", function(_, status)
-   print('connection closed', status)
-   --ws = nil -- required to Lua gc the websocket client
-   --startWS()
+ ws:on("receive", function(_, data, opcode)
+    cmd = string.byte(data, 1)
+    payload = string.sub(data, 2)
+    
+    if cmd == ECHO then
+      ws:send("e"..payload)
+      _start()
+    elseif cmd == BLINK then
+      _start()
+    end
  end)
  ws:connect(configService.wsUrl)
 end
 
-function listap(t)
-      for ssid,v in pairs(t) do
-        authmode, rssi, bssid, channel = 
-          string.match(v, "(%d),(-?%d+),(%x%x:%x%x:%x%x:%x%x:%x%x:%x%x),(%d+)")
-        print(ssid,authmode,rssi,bssid,channel)
-      end
-end
-
-wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T)
- print("\n\tSTA - CONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
- T.BSSID.."\n\tChannel: "..T.channel)
- end)
-
- wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T)
- print("\n\tSTA - DISCONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
- T.BSSID.."\n\treason: "..T.reason)
- end)
-
- wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, function(T)
- print("\n\tSTA - AUTHMODE CHANGE".."\n\told_auth_mode: "..
- T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode)
- end)
-
- wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T)
- print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
- T.netmask.."\n\tGateway IP: "..T.gateway)
- testHttp(configService)
+wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T)
+ print("IP:", T.IP, "mask: ", T.netmask, "GW:", T.gateway)
  startWS()
- end)
+end)
 
- wifi.eventmon.register(wifi.eventmon.STA_DHCP_TIMEOUT, function()
- print("\n\tSTA - DHCP TIMEOUT")
- end)
-
- wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T)
- print("\n\tAP - STATION CONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
- end)
-
- wifi.eventmon.register(wifi.eventmon.AP_STADISCONNECTED, function(T)
- print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
- end)
-
- wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T)
- print("\n\tAP - PROBE REQUEST RECEIVED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
- end)
-
- wifi.eventmon.register(wifi.eventmon.WIFI_MODE_CHANGED, function(T)
- print("\n\tSTA - WIFI MODE CHANGED".."\n\told_mode: "..
- T.old_mode.."\n\tnew_mode: "..T.new_mode)
- end)
-
-
-wifi.setmode(wifi.STATION)
-wifi.sta.getap(listap)
 wifi.sta.config{ssid="?", pwd="?"}
 wifi.sta.connect()
 
@@ -126,13 +134,13 @@ function debounce (func)
 end
 
 function onPush()
-  ws:send('{"event": "BUTTON"}')
+  if (on == true) then
+    reaction = diffToNow(onTime)
+    ws:send('b' .. reaction)
+  end
+  _stop()
 end
 
 gpio.mode(2, gpio.INT, gpio.PULLUP)
 gpio.trig(2, "both", debounce(onPush))
-
---dofile("hcsr04.lua")
---device = hcsr04.init()
---tmr.alarm(0, 1000, 1, function() print(device.measure_avg()) end)
 

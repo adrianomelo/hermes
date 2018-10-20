@@ -5,7 +5,6 @@
         , websocket_handle/2
         , websocket_info/2
         , terminate/3
-        , handle/1
         ]).
 
 
@@ -21,7 +20,7 @@ websocket_init(State) ->
   {ok, State}.
 
 websocket_handle(Frame = {text, Text}, State) ->
-  NewState = handle_msg(jiffy:decode(Text, [return_maps]), State),
+  NewState = handle_msg(Text, State),
   websocket:update(self(), State),
   {reply, Frame, NewState};
 websocket_handle(_, State) ->
@@ -29,7 +28,7 @@ websocket_handle(_, State) ->
 
 websocket_info({timeout, _Ref, _Msg}, State) ->
 	erlang:start_timer(1000, self(), ping),
-	{reply, {text, jiffy:encode(get_echo_msg())}, State};
+	{reply, {text, simple_echo_msg()}, State};
 websocket_info({json, Json}, State) ->
   {reply, {text, jiffy:encode(Json)}, State};
 websocket_info(Msg, State) ->
@@ -51,24 +50,20 @@ empty(Host) ->
     host => Host
   }.
 
-get_echo_msg() ->
-  #{type => <<"ECHO">>, time => get_now()}.
+simple_echo_msg() ->
+  Now = integer_to_list(get_now()),
+  lists:concat(["E", Now]).
 
 get_now() ->
   Now = erlang:system_time(),
   erlang:convert_time_unit(Now, native, millisecond).
 
-handle_msg(#{ <<"type">> := <<"ECHO_BACK">>, <<"time">> := Time}, State) ->
+handle_msg(<<"e", Time/binary>>, State) ->
+  Previous = binary_to_integer(Time),
   Current = get_now(),
-  Latency = Current - Time,
+  Latency = Current - Previous,
   maps:put(latency, Latency, State);
-handle_msg(_, State) ->
+handle_msg(Unknown, State) ->
+  io:fwrite("Unknown message: ~p~n", [Unknown]),
   State.
 
-handle(#{ <<"type">> := <<"ECHO_BACK">>, <<"time">> := Time}) ->
-  CurrentTime = get_now(),
-  io:fwrite("time: ~w~n", [CurrentTime - Time]);
-handle(#{ <<"type">> := Type }) ->
-  io:fwrite("type ~s~n", [Type]);
-handle(_) ->
-  io:fwrite("No handler\n").
