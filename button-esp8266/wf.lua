@@ -7,6 +7,7 @@ function module.connect(onConnected)
     onConnected()
   end)
 
+  wifi.setmode(wifi.STATION)
   wifi.sta.config{ssid="?", pwd=""}
   wifi.sta.connect()
 end
