@@ -3,21 +3,14 @@ print "Starting..."
 led = dofile("led.lua")
 wf = dofile("wf.lua")
 button = dofile("button.lua")
+time = dofile("time.lua")
+protocol = dofile("protocol.lua")
 
 rtctime.set(0)
 
-function now()
-  sec, usec, rate = rtctime.get()
-  return sec * 1000000 + usec
-end
-
-function diffToNow(time)
-  timeNow = now()
-  return timeNow - time
-end
-
 on = false
 onTime = 0
+
 function _stop()
   if (on == true) then
     led.turnOff()
@@ -28,44 +21,30 @@ end
 function _start()
   if (on == false) then
     led.turnOn()
-    onTime = now()
+    onTime = time.now()
     on = true
   end
 end
 
-function createConfigService()
-  return {
-    ipAddr = "192.168.0.12",
-    pingUrl = "http://192.168.0.12:8080/ping",
-    wsUrl = "ws://192.168.0.12:8080/websocket"
-  }
+function onEcho(payload)
+  protocol.send("e" .. payload)
 end
 
-configService = createConfigService()
-
-ECHO = string.byte('E')
-BLINK = string.byte('B')
-REACT = string.byte('R')
+function onSingleTap(payload)
+  _start()
+end
 
 function onConnected()
- ws = websocket.createClient()
- ws:on("receive", function(_, data, opcode)
-    cmd = string.byte(data, 1)
-    payload = string.sub(data, 2)
-    
-    if cmd == ECHO then
-      ws:send("e"..payload)
-    elseif cmd == REACT then
-      _start()
-    end
- end)
- ws:connect(configService.wsUrl)
+  protocol.init({}, {
+    onEcho=onEcho,
+    onSingleTap=onSingleTap
+  })
 end
 
 function onPush()
   if (on == true) then
-    reaction = diffToNow(onTime)
-    ws:send('b' .. reaction)
+    reaction = time.diffToNow(onTime)
+    protocol.send('b' .. reaction)
     _stop()
   end
 end
